@@ -1,3 +1,5 @@
+#![no_std]
+
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
 
