@@ -1,11 +1,12 @@
 #![no_std]
 #![no_main]
 
+use mt6701::AngleSensorTrait;
 use panic_halt as _;
 use rp2040_hal as hal;
 
-use hal::clocks::Clock;
 use fugit::RateExtU32;
+use hal::clocks::Clock;
 
 use hal::spi::Spi;
 
@@ -35,6 +36,8 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
+    let timer = hal::Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
+
     let sio = hal::Sio::new(pac.SIO);
 
     let pins = hal::gpio::Pins::new(
@@ -57,13 +60,14 @@ fn main() -> ! {
         &embedded_hal::spi::MODE_0,
     );
 
-    let mut sensor = mt6701::MT6701SSI::new(spi, spi_cs);
+    let mut sensor = mt6701::MT6701Spi::new(spi, spi_cs);
     sensor.init().unwrap();
 
     loop {
-        sensor.update().unwrap();
+        sensor.update(timer.get_counter().ticks()).unwrap();
         let angle = sensor.get_angle();
-        let angle_single = sensor.get_angle_single();
         let turns = sensor.get_turns();
+        let position = sensor.get_position();
+        let velocity = sensor.get_velocity();
     }
 }
