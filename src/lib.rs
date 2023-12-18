@@ -132,7 +132,7 @@ where
     }
 
     fn get_position(&mut self) -> f64 {
-        self.turns as f64 * _2PI as f64 + self.angle as f64
+        self.position
     }
 
     fn get_velocity(&mut self) -> f32 {
