@@ -113,7 +113,7 @@ where
             self.turns += if move_angle > 0.0 { -1 } else { 1 };
         }
 
-        self.position = self.turns as f64 * _2PI as f64 + self.angle as f64;
+        self.position = (self.turns as f32 * _2PI + self.angle) as f64;
 
         self.cal_velocity(ts_ns);
 
