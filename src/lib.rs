@@ -35,6 +35,8 @@ pub struct MT6701Spi<SPI, CS> {
     turns: i64,
     angle: f32,
     angle_prev: f32,
+    position: f64,
+    position_prev: f64,
     velocity: f32,
     prev_ns: u64,
 }
@@ -49,20 +51,29 @@ where
             spi,
             cs,
             turns: 0,
-            angle_prev: 0.0,
+            position: 0.0,
+            position_prev: 0.0,
             angle: 0.0,
+            angle_prev: 0.0,
             velocity: 0.0,
             prev_ns: 0,
         }
     }
 
-    fn cal_velocity(&mut self, now_ns: u64) {
-        let mut ts = (now_ns - self.prev_ns) as f32 * 1e-6;
+    fn cal_velocity(&mut self, ts_ns: u64) {
+        if ts_ns == 0 {
+            self.velocity = 0.0;
+            return;
+        }
+
+        let mut ts = (ts_ns - self.prev_ns) as f32 * 1e-6;
         if ts < 0.0 {
             ts = 1e-3;
         }
 
-        self.velocity = (self.angle - self.angle_prev) / ts;
+        self.velocity = (self.position - self.position_prev) as f32 / ts;
+
+        self.position_prev = self.position;
     }
 }
 
@@ -102,9 +113,9 @@ where
             self.turns += if move_angle > 0.0 { -1 } else { 1 };
         }
 
-        if ts_ns > 0 {
-            self.cal_velocity(ts_ns);
-        }
+        self.position = self.turns as f64 * _2PI as f64 + self.angle as f64;
+
+        self.cal_velocity(ts_ns);
 
         self.angle_prev = self.angle;
         self.prev_ns = ts_ns;
