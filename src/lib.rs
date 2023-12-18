@@ -36,7 +36,7 @@ pub struct MT6701Spi<SPI, CS> {
     angle: f32,
     angle_prev: f32,
     velocity: f32,
-    prev_us: u64,
+    prev_ns: u64,
 }
 
 impl<SPI, CS> MT6701Spi<SPI, CS>
@@ -52,19 +52,17 @@ where
             angle_prev: 0.0,
             angle: 0.0,
             velocity: 0.0,
-            prev_us: 0,
+            prev_ns: 0,
         }
     }
 
-    fn cal_velocity(&mut self, now_us: u64) {
-        let mut ts = (now_us - self.prev_us) as f32 * 1e-6;
+    fn cal_velocity(&mut self, now_ns: u64) {
+        let mut ts = (now_ns - self.prev_ns) as f32 * 1e-6;
         if ts < 0.0 {
             ts = 1e-3;
         }
 
         self.velocity = (self.angle - self.angle_prev) / ts;
-
-        self.angle_prev = self.angle;
     }
 }
 
@@ -94,7 +92,7 @@ where
         Ok((buffer[0] >> 1) & 0x3FFF)
     }
 
-    fn update(&mut self, now_us: u64) -> nb::Result<(), MT6701Error> {
+    fn update(&mut self, ts_ns: u64) -> nb::Result<(), MT6701Error> {
         let raw_angle = self.read_raw_angle()?;
 
         self.angle = (raw_angle as f32 / 16384_f32) * _2PI;
@@ -103,9 +101,13 @@ where
         if fabsf(move_angle) > (0.8 * _2PI) {
             self.turns += if move_angle > 0.0 { -1 } else { 1 };
         }
-        self.angle_prev = self.angle;
 
-        self.cal_velocity(now_us);
+        if ts_ns > 0 {
+            self.cal_velocity(ts_ns);
+        }
+
+        self.angle_prev = self.angle;
+        self.prev_ns = ts_ns;
 
         Ok(())
     }
