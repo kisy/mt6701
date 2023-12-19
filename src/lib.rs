@@ -60,13 +60,13 @@ where
         }
     }
 
-    fn cal_velocity(&mut self, ts_ns: u64) {
-        if ts_ns == 0 {
+    fn cal_velocity(&mut self, ts_us: u64) {
+        if ts_us == 0 {
             self.velocity = 0.0;
             return;
         }
 
-        let mut ts = (ts_ns - self.prev_ns) as f32 * 1e-6;
+        let mut ts = (ts_us - self.prev_ns) as f32 * 1e-6;
         if ts < 0.0 {
             ts = 1e-3;
         }
@@ -103,7 +103,7 @@ where
         Ok((buffer[0] >> 1) & 0x3FFF)
     }
 
-    fn update(&mut self, ts_ns: u64) -> nb::Result<(), MT6701Error> {
+    fn update(&mut self, ts_us: u64) -> nb::Result<(), MT6701Error> {
         let raw_angle = self.read_raw_angle()?;
 
         self.angle = (raw_angle as f32 / 16384_f32) * _2PI;
@@ -115,10 +115,10 @@ where
 
         self.position = (self.turns as f32 * _2PI + self.angle) as f64;
 
-        self.cal_velocity(ts_ns);
+        self.cal_velocity(ts_us);
 
         self.angle_prev = self.angle;
-        self.prev_ns = ts_ns;
+        self.prev_ns = ts_us;
 
         Ok(())
     }
